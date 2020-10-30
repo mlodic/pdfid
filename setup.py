@@ -10,7 +10,7 @@ README = (HERE / "README.md").read_text()
 # This call to setup() does all the work
 setup(
     name="pdfid",
-    version="1.0.1",
+    version="1.0.2",
     description="PDFID simple tool to analyze PDF malicious files by DidierStevens. Customized by Matteo Lodi to be used as a library.",
     long_description=README,
     long_description_content_type="text/markdown",
