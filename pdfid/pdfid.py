@@ -1097,6 +1097,31 @@ def GetOTPParser():
                        help='json output, supports only basic analysis')
     return oParser
 
+
+def get_fake_options():
+    class FakeOptions:
+        def __init__(self):
+            self.scan = False
+            self.all = False
+            self.extra = False
+            self.force = False
+            self.disarm = False
+            self.plugins = ''
+            self.csv = False
+            self.minimumscore = 0.0
+            self.verbose = False
+            self.select = ''
+            self.nozero = False
+            self.output = ''
+            self.pluginoptions = ''
+            self.literalfilenames = False
+            self.recursedir = False
+            self.json = False
+
+    fakeoptions = FakeOptions()
+    return fakeoptions
+
+
 def Main():
     oParser = GetOTPParser()
     (options, args) = oParser.parse_args()

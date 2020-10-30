@@ -1,9 +1,9 @@
 from pdfid import pdfid
 
+
 def main():
     filenames = ["./test"]
-    oParser = pdfid.GetOTPParser()
-    (options, args) = oParser.parse_args()
+    options = pdfid.get_fake_options()
     options.scan = True
     options.json = True
     list_of_dict = pdfid.PDFiDMain(filenames, options)
