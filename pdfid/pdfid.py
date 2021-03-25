@@ -383,7 +383,7 @@ def ParseINIFile():
                 keywords.append(key)
     return keywords
 
-def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False):
+def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False, output=None):
     """Example of XML output:
     <PDFiD ErrorOccured="False" ErrorMessage="" Filename="test.pdf" Header="%PDF-1.1" IsPDF="True" Version="0.0.4" Entropy="4.28">
             <Keywords>
@@ -462,8 +462,11 @@ def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False):
             oPDFEOF = cPDFEOF()
         (bytesHeader, pdfHeader) = FindPDFHeaderRelaxed(oBinaryFile)
         if disarm:
-            (pathfile, extension) = os.path.splitext(file)
-            fOut = open(pathfile + '.disarmed' + extension, 'wb')
+            if not output:
+                (pathfile, extension) = os.path.splitext(file)
+                fOut = open(pathfile + '.disarmed' + extension, 'wb')
+            else:
+                fOut = output
             for byteHeader in bytesHeader:
                 fOut.write(C2BIP3(chr(byteHeader)))
         else:
@@ -552,7 +555,7 @@ def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False):
         attErrorOccured.nodeValue = 'True'
         attErrorMessage.nodeValue = traceback.format_exc()
 
-    if disarm:
+    if disarm and not output:
         fOut.close()
 
     attEntropyAll = xmlDoc.createAttribute('TotalEntropy')
