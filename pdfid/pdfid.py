@@ -1067,8 +1067,8 @@ def PDFiDMain(filenames, options, filebuffers=[]):
     }
 
     if filebuffers:
-        for filebuffer in filebuffers:
-            ProcessFile("analyzing.pdf", options, plugins, list_of_dict["reports"], filebuffer)
+        for i, filebuffer in enumerate(filebuffers):
+            ProcessFile(filenames[i], options, plugins, list_of_dict["reports"], filebuffer)
     else:
         for filename in filenames:
             if options.scan:
