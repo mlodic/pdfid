@@ -386,7 +386,7 @@ def ParseINIFile():
                 keywords.append(key)
     return keywords
 
-def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False, output=None, fileBuff=b""):
+def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False, output=None, filebuffer=None):
     """Example of XML output:
     <PDFiD ErrorOccured="False" ErrorMessage="" Filename="test.pdf" Header="%PDF-1.1" IsPDF="True" Version="0.0.4" Entropy="4.28">
             <Keywords>
@@ -458,8 +458,8 @@ def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False, outp
     try:
         attIsPDF = xmlDoc.createAttribute('IsPDF')
         xmlDoc.documentElement.setAttributeNode(attIsPDF)
-        if fileBuff != b"":
-            oBinaryFile = cBinaryFile(fileBuff)
+        if filebuffer is not None:
+            oBinaryFile = cBinaryFile(filebuffer)
         else:
             oBinaryFile = cBinaryFile(file)
         if extraData:
@@ -795,8 +795,8 @@ def MakeCSVLine(fields, separator=';', quote='"'):
     strings = [Quote(field[1], separator, quote) for field in fields]
     return formatstring % tuple(strings)
 
-def ProcessFile(filename, options, plugins, list_of_dict, filebuffer=b""):
-    xmlDoc = PDFiD(filename, options.all, options.extra, options.disarm, options.force, fileBuff=filebuffer)
+def ProcessFile(filename, options, plugins, list_of_dict, filebuffer=None):
+    xmlDoc = PDFiD(filename, options.all, options.extra, options.disarm, options.force, filebuffer=filebuffer)
     if plugins == [] and options.select == '':
         PDFID2Dict(xmlDoc, options.nozero, options.force, list_of_dict)
         Print(PDFiD2String(xmlDoc, options.nozero, options.force), options)
@@ -857,7 +857,7 @@ def ProcessFile(filename, options, plugins, list_of_dict, filebuffer=b""):
                     Print(PDFiD2String(xmlDoc, options.nozero, options.force), options)
 
 
-def Scan(directory, options, plugins, filename_dict, filebuffer=b""):
+def Scan(directory, options, plugins, filename_dict, filebuffer=None):
     try:
         if os.path.isdir(directory):
             for entry in os.listdir(directory):
