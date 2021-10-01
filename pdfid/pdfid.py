@@ -1051,7 +1051,7 @@ def LoadPlugins(plugins, verbose):
             if verbose:
                 raise e
 
-def PDFiDMain(filenames, options, filebuffers=[]):
+def PDFiDMain(filenames, options, filebuffers=None):
     global plugins
     plugins = []
     LoadPlugins(options.plugins, options.verbose)
@@ -1066,15 +1066,15 @@ def PDFiDMain(filenames, options, filebuffers=[]):
         "reports": []
     }
 
-    if filebuffers:
-        for i, filebuffer in enumerate(filebuffers):
-            ProcessFile(filenames[i], options, plugins, list_of_dict["reports"], filebuffer)
-    else:
+    if not filebuffers:
         for filename in filenames:
             if options.scan:
                 Scan(filename, options, plugins, list_of_dict["reports"])
             else:
                 ProcessFile(filename, options, plugins, list_of_dict["reports"])
+    else:
+        for i, filebuffer in enumerate(filebuffers):
+            ProcessFile(filenames[i], options, plugins, list_of_dict["reports"], filebuffer)
 
     if options.json:
         return list_of_dict
