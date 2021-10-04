@@ -77,6 +77,7 @@ import zipfile
 import collections
 import glob
 import fnmatch
+import io
 if sys.version_info[0] >= 3:
     import urllib.request as urllib23
 else:
@@ -98,6 +99,8 @@ class cBinaryFile:
         self.file = file
         if file == '':
             self.infile = sys.stdin
+        elif isinstance(file, bytes):
+            self.infile = io.BytesIO(file)
         elif file.lower().startswith('http://') or file.lower().startswith('https://'):
             try:
                 if sys.hexversion >= 0x020601F0:
@@ -383,7 +386,7 @@ def ParseINIFile():
                 keywords.append(key)
     return keywords
 
-def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False, output=None):
+def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False, output=None, filebuffer=None):
     """Example of XML output:
     <PDFiD ErrorOccured="False" ErrorMessage="" Filename="test.pdf" Header="%PDF-1.1" IsPDF="True" Version="0.0.4" Entropy="4.28">
             <Keywords>
@@ -455,7 +458,10 @@ def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False, outp
     try:
         attIsPDF = xmlDoc.createAttribute('IsPDF')
         xmlDoc.documentElement.setAttributeNode(attIsPDF)
-        oBinaryFile = cBinaryFile(file)
+        if filebuffer is not None:
+            oBinaryFile = cBinaryFile(filebuffer)
+        else:
+            oBinaryFile = cBinaryFile(file)
         if extraData:
             oPDFDate = cPDFDate()
             oEntropy = cEntropy()
@@ -789,8 +795,8 @@ def MakeCSVLine(fields, separator=';', quote='"'):
     strings = [Quote(field[1], separator, quote) for field in fields]
     return formatstring % tuple(strings)
 
-def ProcessFile(filename, options, plugins, list_of_dict):
-    xmlDoc = PDFiD(filename, options.all, options.extra, options.disarm, options.force)
+def ProcessFile(filename, options, plugins, list_of_dict, filebuffer=None):
+    xmlDoc = PDFiD(filename, options.all, options.extra, options.disarm, options.force, filebuffer=filebuffer)
     if plugins == [] and options.select == '':
         PDFID2Dict(xmlDoc, options.nozero, options.force, list_of_dict)
         Print(PDFiD2String(xmlDoc, options.nozero, options.force), options)
@@ -851,13 +857,13 @@ def ProcessFile(filename, options, plugins, list_of_dict):
                     Print(PDFiD2String(xmlDoc, options.nozero, options.force), options)
 
 
-def Scan(directory, options, plugins, filename_dict):
+def Scan(directory, options, plugins, filename_dict, filebuffer=None):
     try:
         if os.path.isdir(directory):
             for entry in os.listdir(directory):
-                Scan(os.path.join(directory, entry), options, plugins, filename_dict)
+                Scan(os.path.join(directory, entry), options, plugins, filename_dict, filebuffer)
         else:
-            ProcessFile(directory, options, plugins, filename_dict)
+            ProcessFile(directory, options, plugins, filename_dict, filebuffer)
     except Exception as e:
 #        print directory
         print(e)
@@ -1045,7 +1051,7 @@ def LoadPlugins(plugins, verbose):
             if verbose:
                 raise e
 
-def PDFiDMain(filenames, options):
+def PDFiDMain(filenames, options, filebuffers=None):
     global plugins
     plugins = []
     LoadPlugins(options.plugins, options.verbose)
@@ -1059,11 +1065,16 @@ def PDFiDMain(filenames, options):
     list_of_dict = {
         "reports": []
     }
-    for filename in filenames:
-        if options.scan:
-            Scan(filename, options, plugins, list_of_dict["reports"])
-        else:
-            ProcessFile(filename, options, plugins, list_of_dict["reports"])
+
+    if not filebuffers:
+        for filename in filenames:
+            if options.scan:
+                Scan(filename, options, plugins, list_of_dict["reports"])
+            else:
+                ProcessFile(filename, options, plugins, list_of_dict["reports"])
+    else:
+        for i, filebuffer in enumerate(filebuffers):
+            ProcessFile(filenames[i], options, plugins, list_of_dict["reports"], filebuffer)
 
     if options.json:
         return list_of_dict
