@@ -59,7 +59,6 @@ def main():
     # 3. Disarm PDF from buffer and return disarmed buffer
     print("STARTING DISARM")
     disarmed_pdf_buffers = disarm_pdfs_by_buffer(filenames, file_buffers)
-    print(f"{disarmed_pdf_buffers['buffers'][0][:100]=}")
 
     # 3.1 Analyze PDF from disarmed buffer
     print("STARTING DISARMED ANALYSIS")

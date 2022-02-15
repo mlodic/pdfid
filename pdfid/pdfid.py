@@ -572,14 +572,13 @@ def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False, outp
     except:
         attErrorOccured.nodeValue = 'True'
         attErrorMessage.nodeValue = traceback.format_exc()
-
-    if disarm and not output:
-        fOut.close()
-
     
     if disarm:
         disarmed_filebuffers.append(disarmed_pdf_buffer.getvalue())
-        # disarmed_pdf_buffer.close()
+
+    if disarm and not output:
+        fOut.close()
+        disarmed_pdf_buffer.close()
 
     attEntropyAll = xmlDoc.createAttribute('TotalEntropy')
     xmlDoc.documentElement.setAttributeNode(attEntropyAll)
