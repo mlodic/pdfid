@@ -325,7 +325,7 @@ def HexcodeName2String(hexcodeName):
 def SwapName(wordExact):
     return map(SwapCase, wordExact)
 
-def UpdateWords(word, wordExact, slash, words, hexcode, allNames, lastName, insideStream, oEntropy, fOut):
+def UpdateWords(word, wordExact, slash, words, hexcode, allNames, lastName, insideStream, oEntropy, fOut, disarmed_buffer=None):
     if word != '':
         if slash + word in words:
             words[slash + word][0] += 1
@@ -349,9 +349,13 @@ def UpdateWords(word, wordExact, slash, words, hexcode, allNames, lastName, insi
             if slash == '/' and '/' + word in ('/JS', '/JavaScript', '/AA', '/OpenAction', '/JBIG2Decode', '/RichMedia', '/Launch'):
                 wordExactSwapped = HexcodeName2String(SwapName(wordExact))
                 fOut.write(C2BIP3(wordExactSwapped))
+                if disarmed_buffer is not None:
+                    disarmed_buffer.write(C2BIP3(wordExactSwapped))
                 print('/%s -> /%s' % (HexcodeName2String(wordExact), wordExactSwapped))
             else:
                 fOut.write(C2BIP3(HexcodeName2String(wordExact)))
+                if disarmed_buffer is not None:
+                    disarmed_buffer.write(C2BIP3(HexcodeName2String(wordExact)))
     return ('', [], False, lastName, insideStream)
 
 class cCVE_2009_3459:
@@ -386,7 +390,7 @@ def ParseINIFile():
                 keywords.append(key)
     return keywords
 
-def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False, output=None, filebuffer=None):
+def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False, output=None, disarmed_filebuffers=None, filebuffer=None):
     """Example of XML output:
     <PDFiD ErrorOccured="False" ErrorMessage="" Filename="test.pdf" Header="%PDF-1.1" IsPDF="True" Version="0.0.4" Entropy="4.28">
             <Keywords>
@@ -468,15 +472,20 @@ def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False, outp
             oPDFEOF = cPDFEOF()
         (bytesHeader, pdfHeader) = FindPDFHeaderRelaxed(oBinaryFile)
         if disarm:
+            disarmed_pdf_buffer = io.BytesIO()
             if not output:
+                # print("Disarm activated - Generating Output file")
                 (pathfile, extension) = os.path.splitext(file)
                 fOut = open(pathfile + '.disarmed' + extension, 'wb')
             else:
+                # print("Disarm activated - Output file given")
                 fOut = output
             for byteHeader in bytesHeader:
+                disarmed_pdf_buffer.write(C2BIP3(chr(byteHeader)))
                 fOut.write(C2BIP3(chr(byteHeader)))
         else:
             fOut = None
+            disarmed_pdf_buffer = None
         if oEntropy != None:
             for byteHeader in bytesHeader:
                 oEntropy.add(byteHeader, insideStream)
@@ -516,24 +525,27 @@ def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False, outp
                     else:
                         oBinaryFile.unget(d2)
                         oBinaryFile.unget(d1)
-                        (word, wordExact, hexcode, lastName, insideStream) = UpdateWords(word, wordExact, slash, words, hexcode, allNames, lastName, insideStream, oEntropy, fOut)
+                        (word, wordExact, hexcode, lastName, insideStream) = UpdateWords(word, wordExact, slash, words, hexcode, allNames, lastName, insideStream, oEntropy, fOut, disarmed_pdf_buffer)
                         if disarm:
                             fOut.write(C2BIP3(char))
+                            disarmed_pdf_buffer.write(C2BIP3(char))
                 else:
                     oBinaryFile.unget(d1)
-                    (word, wordExact, hexcode, lastName, insideStream) = UpdateWords(word, wordExact, slash, words, hexcode, allNames, lastName, insideStream, oEntropy, fOut)
+                    (word, wordExact, hexcode, lastName, insideStream) = UpdateWords(word, wordExact, slash, words, hexcode, allNames, lastName, insideStream, oEntropy, fOut, disarmed_pdf_buffer)
                     if disarm:
                         fOut.write(C2BIP3(char))
+                        disarmed_pdf_buffer.write(C2BIP3(char))
             else:
                 oCVE_2009_3459.Check(lastName, word)
 
-                (word, wordExact, hexcode, lastName, insideStream) = UpdateWords(word, wordExact, slash, words, hexcode, allNames, lastName, insideStream, oEntropy, fOut)
+                (word, wordExact, hexcode, lastName, insideStream) = UpdateWords(word, wordExact, slash, words, hexcode, allNames, lastName, insideStream, oEntropy, fOut, disarmed_pdf_buffer)
                 if char == '/':
                     slash = '/'
                 else:
                     slash = ''
                 if disarm:
                     fOut.write(C2BIP3(char))
+                    disarmed_pdf_buffer.write(C2BIP3(char))
 
             if oPDFDate != None and oPDFDate.parse(char) != None:
                 dates.append([oPDFDate.date, lastName])
@@ -545,7 +557,7 @@ def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False, outp
                 oPDFEOF.parse(char)
 
             byte = oBinaryFile.byte()
-        (word, wordExact, hexcode, lastName, insideStream) = UpdateWords(word, wordExact, slash, words, hexcode, allNames, lastName, insideStream, oEntropy, fOut)
+        (word, wordExact, hexcode, lastName, insideStream) = UpdateWords(word, wordExact, slash, words, hexcode, allNames, lastName, insideStream, oEntropy, fOut, disarmed_pdf_buffer)
 
         # check to see if file ended with %%EOF.  If so, we can reset charsAfterLastEOF and add one to EOF count.  This is never performed in
         # the parse function because it never gets called due to hitting the end of file.
@@ -560,9 +572,13 @@ def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False, outp
     except:
         attErrorOccured.nodeValue = 'True'
         attErrorMessage.nodeValue = traceback.format_exc()
+    
+    if disarm:
+        disarmed_filebuffers.append(disarmed_pdf_buffer.getvalue())
 
     if disarm and not output:
         fOut.close()
+        disarmed_pdf_buffer.close()
 
     attEntropyAll = xmlDoc.createAttribute('TotalEntropy')
     xmlDoc.documentElement.setAttributeNode(attEntropyAll)
@@ -795,8 +811,8 @@ def MakeCSVLine(fields, separator=';', quote='"'):
     strings = [Quote(field[1], separator, quote) for field in fields]
     return formatstring % tuple(strings)
 
-def ProcessFile(filename, options, plugins, list_of_dict, filebuffer=None):
-    xmlDoc = PDFiD(filename, options.all, options.extra, options.disarm, options.force, filebuffer=filebuffer)
+def ProcessFile(filename, options, plugins, list_of_dict, disarmed_filebuffers=None, filebuffer=None):
+    xmlDoc = PDFiD(filename, options.all, options.extra, options.disarm, options.force, disarmed_filebuffers=disarmed_filebuffers, filebuffer=filebuffer)
     if plugins == [] and options.select == '':
         PDFID2Dict(xmlDoc, options.nozero, options.force, list_of_dict)
         Print(PDFiD2String(xmlDoc, options.nozero, options.force), options)
@@ -857,13 +873,13 @@ def ProcessFile(filename, options, plugins, list_of_dict, filebuffer=None):
                     Print(PDFiD2String(xmlDoc, options.nozero, options.force), options)
 
 
-def Scan(directory, options, plugins, filename_dict, filebuffer=None):
+def Scan(directory, options, plugins, filename_dict, disarmed_filebuffer=None, filebuffer=None):
     try:
         if os.path.isdir(directory):
             for entry in os.listdir(directory):
-                Scan(os.path.join(directory, entry), options, plugins, filename_dict, filebuffer)
+                Scan(os.path.join(directory, entry), options, plugins, filename_dict, disarmed_filebuffer, filebuffer)
         else:
-            ProcessFile(directory, options, plugins, filename_dict, filebuffer)
+            ProcessFile(directory, options, plugins, filename_dict, disarmed_filebuffer, filebuffer)
     except Exception as e:
 #        print directory
         print(e)
@@ -1066,18 +1082,34 @@ def PDFiDMain(filenames, options, filebuffers=None):
         "reports": []
     }
 
+    disarmed_buffers = {
+        "buffers": []
+    }
+
     if not filebuffers:
         for filename in filenames:
             if options.scan:
-                Scan(filename, options, plugins, list_of_dict["reports"])
+                Scan(filename, options, plugins, list_of_dict["reports"], disarmed_buffers["buffers"])
             else:
-                ProcessFile(filename, options, plugins, list_of_dict["reports"])
+                ProcessFile(filename, options, plugins, list_of_dict["reports"], disarmed_buffers["buffers"])
     else:
         for i, filebuffer in enumerate(filebuffers):
-            ProcessFile(filenames[i], options, plugins, list_of_dict["reports"], filebuffer)
+            ProcessFile(filenames[i], options, plugins, list_of_dict["reports"], disarmed_buffers["buffers"], filebuffer)
+
+    results = ()
 
     if options.json:
-        return list_of_dict
+        results += (list_of_dict,)
+    
+    if options.return_disarmed_buffer:
+        results += (disarmed_buffers,)
+    
+    if len(results) == 1:
+        results = results[0]
+    
+    return results
+    
+
 
 
 def GetOTPParser():
@@ -1109,6 +1141,7 @@ def GetOTPParser():
     oParser.add_option('--recursedir', action='store_true', default=False, help='Recurse directories (wildcards and here files (@...) allowed)')
     oParser.add_option('-j', '--json', action='store_true', default=False,
                        help='json output, supports only basic analysis')
+    oParser.add_option('-b', '--return_disarmed_buffer', action='store_true', default=False, help='Returns the disarmed pdf documents as buffer objects.')
     return oParser
 
 
@@ -1131,6 +1164,7 @@ def get_fake_options():
             self.literalfilenames = False
             self.recursedir = False
             self.json = False
+            self.return_disarmed_buffer = False
 
     fakeoptions = FakeOptions()
     return fakeoptions
