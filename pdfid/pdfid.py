@@ -525,20 +525,20 @@ def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False, outp
                     else:
                         oBinaryFile.unget(d2)
                         oBinaryFile.unget(d1)
-                        (word, wordExact, hexcode, lastName, insideStream) = UpdateWords(word, wordExact, slash, words, hexcode, allNames, lastName, insideStream, oEntropy, fOut)
+                        (word, wordExact, hexcode, lastName, insideStream) = UpdateWords(word, wordExact, slash, words, hexcode, allNames, lastName, insideStream, oEntropy, fOut, disarmed_pdf_buffer)
                         if disarm:
                             fOut.write(C2BIP3(char))
                             disarmed_pdf_buffer.write(C2BIP3(char))
                 else:
                     oBinaryFile.unget(d1)
-                    (word, wordExact, hexcode, lastName, insideStream) = UpdateWords(word, wordExact, slash, words, hexcode, allNames, lastName, insideStream, oEntropy, fOut)
+                    (word, wordExact, hexcode, lastName, insideStream) = UpdateWords(word, wordExact, slash, words, hexcode, allNames, lastName, insideStream, oEntropy, fOut, disarmed_pdf_buffer)
                     if disarm:
                         fOut.write(C2BIP3(char))
                         disarmed_pdf_buffer.write(C2BIP3(char))
             else:
                 oCVE_2009_3459.Check(lastName, word)
 
-                (word, wordExact, hexcode, lastName, insideStream) = UpdateWords(word, wordExact, slash, words, hexcode, allNames, lastName, insideStream, oEntropy, fOut)
+                (word, wordExact, hexcode, lastName, insideStream) = UpdateWords(word, wordExact, slash, words, hexcode, allNames, lastName, insideStream, oEntropy, fOut, disarmed_pdf_buffer)
                 if char == '/':
                     slash = '/'
                 else:
@@ -557,7 +557,7 @@ def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False, outp
                 oPDFEOF.parse(char)
 
             byte = oBinaryFile.byte()
-        (word, wordExact, hexcode, lastName, insideStream) = UpdateWords(word, wordExact, slash, words, hexcode, allNames, lastName, insideStream, oEntropy, fOut)
+        (word, wordExact, hexcode, lastName, insideStream) = UpdateWords(word, wordExact, slash, words, hexcode, allNames, lastName, insideStream, oEntropy, fOut, disarmed_pdf_buffer)
 
         # check to see if file ended with %%EOF.  If so, we can reset charsAfterLastEOF and add one to EOF count.  This is never performed in
         # the parse function because it never gets called due to hitting the end of file.
@@ -579,7 +579,7 @@ def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False, outp
     
     if disarm:
         disarmed_filebuffers.append(disarmed_pdf_buffer.getvalue())
-        disarmed_pdf_buffer.close()
+        # disarmed_pdf_buffer.close()
 
     attEntropyAll = xmlDoc.createAttribute('TotalEntropy')
     xmlDoc.documentElement.setAttributeNode(attEntropyAll)

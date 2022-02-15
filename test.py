@@ -3,7 +3,7 @@ from pdfid import pdfid
 
 pp = pprint.PrettyPrinter(indent=4)
 
-TEST_FILENAME = "./test"
+TEST_FILENAME = "./JavaScriptClock.pdf"
 
 def analyze_pdfs_by_filenames(filenames):
     # 1. Setup
