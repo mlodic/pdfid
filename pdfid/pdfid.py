@@ -414,6 +414,8 @@ def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False, outp
             </Dates>
     </PDFiD>
     """
+    if not disarmed_filebuffers:
+        disarmed_filebuffers = []
 
     word = ''
     wordExact = []
