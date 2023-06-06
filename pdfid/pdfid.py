@@ -693,7 +693,8 @@ def PDFID2Dict(xmlDoc, nozero, force, list_of_dict):
     filename_dict['header'] = xmlDoc.documentElement.getAttribute('Header')
     for node in xmlDoc.documentElement.getElementsByTagName('Keywords')[0].childNodes:
         if not nozero or nozero and int(node.getAttribute('Count')) > 0:
-            filename_dict[node.getAttribute('Name')] = int(node.getAttribute('Count'))
+            name = node.getAttribute('Name')
+            filename_dict[name] = int(node.getAttribute('Count'))
             if int(node.getAttribute('HexcodeCount')) > 0:
                 filename_dict['%s_hexcode_count' % name] = int(node.getAttribute('HexcodeCount'))
     if xmlDoc.documentElement.getAttribute('CountEOF') != '':
